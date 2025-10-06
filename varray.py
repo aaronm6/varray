@@ -373,22 +373,6 @@ class varray:
         else:
             print(f"'{method}' was requested as a method")
             return NotImplemented
-        """
-#_last_one_lam = lambda x, y: x if y==0 else y
-#_ulast_one = np.frompyfunc(_last_one_lam, 2, 1)
-        elif isinstance(item, np.ndarray):
-            if item.dtype is not np.dtype('bool'):
-                newsarray = self._sarray[item]
-                tag_arr = np.zeros(len(self._darray), dtype=np.int8)
-                tag_arr[self._csarray[item]] = 1
-                tag_arr[self._csarray[~item]] = -1
-                tag_arr = _ulast_one.accumulate(tag_arr)
-                cut_darray = tag_arr == 1
-                newdarray = self._darray[cut_darray]
-                return varray(newdarray, newsarray)
-            else:
-                raise ValueError("Index-array referencing not implemented yet")
-        """
 
 # Binary-operation definitions all follow the same framework, so we define these in a loop
 for op_name in _binops:
