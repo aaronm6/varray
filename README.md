@@ -3,11 +3,11 @@ A 2d numpy-like array that supports variable-length rows
 
 ## Installation
 ```
-pip install git+https://github.com/aaronm6/varray.git
+pip install varray
 ```
 or try
 ```
-pip install varray
+pip install git+https://github.com/aaronm6/varray.git
 ```
 
 ## Description
