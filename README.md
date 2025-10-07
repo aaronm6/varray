@@ -146,3 +146,10 @@ varray([[9.11111425, 8.80235022, 7.98956072, 5.57863532],
         [3.20647385, 2.80067871],
         [8.09444581, 1.77697536, 1.02075117]])
 ```
+## Saving to file
+Since varrays essentially just wrap two arrays (a `darray` and an `sarray`), one can save these in any way that one prefers; I recommend using `np.savez_compressed`.  I really recommend **against** accessing the `_darray` and `_sarray` attributes directly.  When one creates a varray by slicing another varray, for example, the `darray` of the sliced varray is identical to that of its parent varray.  Likewise with numpy arrays, they are really "views" to an underlying data array, and a sliced array might contain elements that are not complete and/or not contiguous in memory.  So one needs to "serialize" the underlying data before saving, to extract only the information that is needed for that particular object.  varray provides a member function `serialize_as_numpy_arrays` to do this, which returns a `dict` object two entries: one with key suffix `_d` (for the data array) and another with the key suffix `_s` (for the shape array).  So in the example above, with the varray called `entry_times`, one could serialize the data and save to an `npz` file as such:
+```python
+>>> entry_times_serialized = entry_times.serialize_as_numpy_arrays(array_name='entry_times')
+>>> np.savez_compressed(filename.npz, **entry_times_serialized)
+```
+To then load
