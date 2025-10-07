@@ -28,7 +28,14 @@ etc.), which allocated the space, and then fill in the values later.
 Contents:
 
 varray : variable-array class. See its docstring for instantiation syntax
-
+empty
+empty_like
+ones
+ones_like
+zeros
+zeros_like
+__version__
+__version_tuple__
 """
 
 import numpy as np
@@ -223,7 +230,7 @@ class varray:
         return self._dtype
     @property
     def nbytes(self):
-        return self._darray.nbytes + self._sarray.nbytes
+        return self._darray.nbytes + self._sarray.nbytes + self._csarray.nbytes
     @property
     def size(self):
         return len(self._darray)
@@ -270,6 +277,7 @@ class varray:
             if not (other._sarray == self._sarray).all():
                 raise ValueError("Cannot add two varrays unless they have the same shape")
     def _binary_op(self, other, op_name):
+        self._check_dims(other)
         dt = bool if op_name in ('eq','gt','ge','lt','le') else self.dtype
         if isinstance(other, varray):
             other_comp = other._darray
@@ -277,6 +285,7 @@ class varray:
             other_comp = other
         return varray(darray=getattr(operator,op_name)(self._darray,other_comp),sarray=self._sarray, dtype=dt)
     def _rbinary_op(self, other, op_name):
+        self._check_dims(other)
         dt = bool if op_name in ('eq','gt','ge','lt','le') else self.dtype
         return varray(darray=getattr(operator,op_name)(other,self._darray),sarray=self._sarray, dtype=dt)
     def _unary_op(self, op_name):
