@@ -34,16 +34,16 @@ ones
 ones_like
 zeros
 zeros_like
-__version__
-__version_tuple__
+version
+version_tuple
 """
 
 import numpy as np
 import operator
 import re
 
-__version__ = '0.1.0'
-__version_tuple__ = tuple([int(item) for item in __version__.split('.')])
+version = __version__ = '0.1.0'
+version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like']
 
@@ -224,7 +224,7 @@ class varray:
             self[item[0]][item[1]] = val
     @property
     def shape(self):
-        return (len(self._sarray),tuple(self._sarray))
+        return tuple(self._sarray)
     @property
     def dtype(self):
         return self._dtype
@@ -414,39 +414,219 @@ for op_name in _rowops_accumulate:
     setattr(varray, op_name, method)
 
 # varray creation routines, analogous to numpy arrays
+
 def empty(sarray, dtype=np.float64):
+    """
+    Create a new varray with the specified shape and dtype.  The data array is
+    initialized via numpy.empty
+    
+    Parameters
+    ----------
+    sarray : 1d numpy array of dtype int
+        The array of row lengths
+    dtype : data type, optional
+        The data type of the data values contained in the varray.
+    
+    Returns
+    -------
+    new_varray : varray
+        A new empty array of the specified shape and dtype.
+    """
+    if not isinstance(sarray, np.ndarray):
+        sarray = np.array(sarray)
+    if sarray.ndim != 1:
+        raise ValueError("Specified shape array (sarray) must be 1d")
+    if not isinstance(dtype, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.empty(np.array(sarray).sum(), dtype=dtype)
     return varray(darray=darray, sarray=np.array(sarray), dtype=dtype)
 
 def empty_like(v_obj, dtype=None):
+    """
+    Create a new varray with the same shape as the prototype provided
+    
+    Parameters
+    ----------
+    v_obj : varray
+        A prototype varray object.  The new object that is created will have the
+        same size and dtype (unless otherwise specified) as v_obj.
+    dtype : data type, optional
+    
+    Returns
+    -------
+    new_varray : varray
+        A new empty array of the same shape as the provided v_obj
+    """
     dt = v_obj.dtype if dtype is None else dtype
+    if not isinstance(v_obj, varray):
+        raise TypeError("Provided object must be a varray")
+    if not isinstance(dt, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.empty_like(v_obj._darray, dtype=dt)
     return varray(darray=darray, sarray=v_obj._sarray, dtype=dt)
 
 def ones(sarray, dtype=np.float64):
+    """
+    Create a new varray with the specified shape and dtype.  The data array is
+    initialized via numpy.ones
+    
+    Parameters
+    ----------
+    sarray : 1d numpy array of dtype int
+        The array of row lengths
+    dtype : data type, optional
+        The data type of the data values contained in the varray.
+    
+    Returns
+    -------
+    new_varray : varray
+        A new array of the specified shape and dtype initialized with ones.
+    """
+    if not isinstance(sarray, np.ndarray):
+        sarray = np.array(sarray)
+    if sarray.ndim != 1:
+        raise ValueError("Specified shape array (sarray) must be 1d")
+    if not isinstance(dtype, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.ones(np.array(sarray).sum(), dtype=dtype)
     return varray(darray=darray, sarray=np.array(sarray), dtype=dtype)
 
 def ones_like(v_obj, dtype=None):
+    """
+    Create a new varray with the same shape as the prototype provided initialized
+    with numpy.ones
+    
+    Parameters
+    ----------
+    v_obj : varray
+        A prototype varray object.  The new object that is created will have the
+        same size and dtype (unless otherwise specified) as v_obj.
+    dtype : data type, optional
+    
+    Returns
+    -------
+    new_varray : varray
+        A new empty array of the same shape as the provided v_obj initialized with 
+        ones.
+    """
     dt = v_obj.dtype if dtype is None else dtype
+    if not isinstance(v_obj, varray):
+        raise TypeError("Provided object must be a varray")
+    if not isinstance(dt, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.ones_like(v_obj._darray, dtype=dt)
     return varray(darray=darray, sarray=v_obj._sarray, dtype=dt)
 
 def zeros(sarray, dtype=np.float64):
+    """
+    Create a new varray with the specified shape and dtype.  The data array is
+    initialized via numpy.zeros
+    
+    Parameters
+    ----------
+    sarray : 1d numpy array of dtype int
+        The array of row lengths
+    dtype : data type, optional
+        The data type of the data values contained in the varray.
+    
+    Returns
+    -------
+    new_varray : varray
+        A new array of the specified shape and dtype initialized with zeros.
+    """
+    if not isinstance(sarray, np.ndarray):
+        sarray = np.array(sarray)
+    if sarray.ndim != 1:
+        raise ValueError("Specified shape array (sarray) must be 1d")
+    if not isinstance(dtype, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.zeros(np.array(sarray).sum(), dtype=dtype)
     return varray(darray=darray, sarray=np.array(sarray), dtype=dtype)
 
 def zeros_like(v_obj, dtype=None):
+    """
+    Create a new varray with the same shape as the prototype provided initialized
+    with numpy.zeros
+    
+    Parameters
+    ----------
+    v_obj : varray
+        A prototype varray object.  The new object that is created will have the
+        same size and dtype (unless otherwise specified) as v_obj.
+    dtype : data type, optional
+    
+    Returns
+    -------
+    new_varray : varray
+        A new empty array of the same shape as the provided v_obj initialized with 
+        zeros.
+    """
     dt = v_obj.dtype if dtype is None else dtype
+    if not isinstance(v_obj, varray):
+        raise TypeError("Provided object must be a varray")
+    if not isinstance(dt, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.zeros_like(v_obj._darray, dtype=dt)
     return varray(darray=darray, sarray=v_obj._sarray, dtype=dt)
 
 def full(sarray, fill_value, dtype=np.float64):
+    """
+    Create a new varray with the specified shape, fill value and dtype.  The data 
+    array is initialized via numpy.full
+    
+    Parameters
+    ----------
+    sarray : 1d numpy array of dtype int
+        The array of row lengths
+    fill_value : scalar
+        Fill value
+    dtype : data type, optional
+        The data type of the data values contained in the varray.
+    
+    Returns
+    -------
+    new_varray : varray
+        A new array of the specified shape and dtype initialized with the specified
+        fill value.
+    """
+    if not isinstance(sarray, np.ndarray):
+        sarray = np.array(sarray)
+    if sarray.ndim != 1:
+        raise ValueError("Specified shape array (sarray) must be 1d")
+    if not np.isscalar(fill_value):
+        raise TypeError("fill_value must be a scalar.")
+    if not isinstance(dtype, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.full(np.full(np.array(sarray).sum(), fill_value, dtype=dtype))
     return varray(darray=darray, sarray=np.array(sarray), dtype=dtype)
 
 def full_like(v_obj, fill_value, dtype=None):
+    """
+    Create a new varray with the same shape as the prototype provided initialized
+    with a scalar value provided.
+    
+    Parameters
+    ----------
+    v_obj : varray
+        A prototype varray object.  The new object that is created will have the
+        same size and dtype (unless otherwise specified) as v_obj.
+    fill_value : scalar
+        Fill value
+    dtype : data type, optional
+    
+    Returns
+    -------
+    new_varray : varray
+        A new empty array of the same shape as the provided v_obj initialized with 
+        the provided fill value.
+    """
     dt = v_obj.dtype if dtype is None else dtype
+    if not isinstance(v_obj, varray):
+        raise TypeError("Provided object must be a varray")
+    if not np.isscalar(fill_value):
+        raise TypeError("fill_value must be a scalar.")
+    if not isinstance(dt, type):
+        raise TypeError("Specified dtype must be a type instance")
     darray = np.full_like(v_obj._darray, fill_value, dtype=dt)
     return varray(darray=darray, sarray=v_obj._sarray, dtype=dt)
 
