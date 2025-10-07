@@ -255,7 +255,6 @@ class varray:
         for k in range(numlines):
             pre_space = 0 if k==0 else pad_space
             entry_str = re.sub(r'(?<=\[)\s+','',str(self[k,:]))
-            #entry_str = re.sub(r'(?<=\d)\s+',', ',entry_str)
             entry_str = re.sub(r'\s+',', ',entry_str)
             if (pad_space + len(entry_str)) > _linewidth:
                 line_str = ' '*pre_space + f'{entry_str:0.{_linewidth-pad_space-3}s}' + '...'
