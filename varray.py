@@ -3,15 +3,15 @@
 varray (variable array): A light-weight array type with numpy ndarrays as the backend, 
 which supports 2d arrays with rows of variable length.
 
-Why, when awkward (ak) arrays exist?  ak arrays are efficient and versatile and should be
+Why, when awkward (awk) arrays exist?  awk arrays are efficient and versatile and should be
 used when one's use case aligns with their capabilities.  However, I found myself avoiding
-them in my own use for two reasons:
-    1: ak arrays are IMMUTABLE, and hence read-only.  This means they're great to read from,
+them in my own work for two reasons:
+    1: awk arrays are IMMUTABLE, and hence read-only.  This means they're great to read from,
        but what if you actually want to use them to store data in a script?  For example, 
-       you want to fill rows in a loop?  This used to be possible in earlier versions of ak, 
-       but had since been removed.  This is my main motivation for creating varray: ak arrays' 
+       you want to fill rows in a loop?  This used to be possible in earlier versions of awk, 
+       but has since been removed.  This is my main motivation for creating varray: awk arrays' 
        immutability makes them unusable for the vast majority of my own use cases.
-    2: ak is a large package that involves c++ code and all of its plethora of functionality
+    2: awk is a large package that involves c++ code and all of its plethora of functionality
        might not always be needed.  Hence the desire for a light-weight alternative that
        involves python code only.
 
@@ -255,7 +255,8 @@ class varray:
         for k in range(numlines):
             pre_space = 0 if k==0 else pad_space
             entry_str = re.sub(r'(?<=\[)\s+','',str(self[k,:]))
-            entry_str = re.sub(r'(?<=\d)\s+',', ',entry_str)
+            #entry_str = re.sub(r'(?<=\d)\s+',', ',entry_str)
+            entry_str = re.sub(r'\s+',', ',entry_str)
             if (pad_space + len(entry_str)) > _linewidth:
                 line_str = ' '*pre_space + f'{entry_str:0.{_linewidth-pad_space-3}s}' + '...'
             else:
