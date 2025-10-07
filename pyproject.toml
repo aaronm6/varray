@@ -17,6 +17,10 @@ classifiers = ["Programming Language :: Python :: 3",]
 dependencies = ["numpy>=1.18.0"]
 dynamic = ["version"]
 
+[project.urls]
+Homepage = "https://github.com/aaronm6/varray"
+Repository = "https://github.com/aaronm6/varray"
+
 [tool.setuptools]
 platforms=["unix-like"]
 zip-safe = false
