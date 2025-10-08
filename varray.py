@@ -42,7 +42,7 @@ import numpy as np
 import operator
 import re
 
-version = __version__ = '0.1.0'
+version = __version__ = '0.1.1'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like']
