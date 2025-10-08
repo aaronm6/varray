@@ -630,3 +630,15 @@ def full_like(v_obj, fill_value, dtype=None):
     darray = np.full_like(v_obj._darray, fill_value, dtype=dt)
     return varray(darray=darray, sarray=v_obj._sarray, dtype=dt)
 
+
+
+
+
+
+
+
+
+
+
+
+

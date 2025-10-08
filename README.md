@@ -118,40 +118,67 @@ We can create an empty varray and then fill in the rows.  Suppose we have server
 >>> num_iterations = 10
 >>> num_entries = st.poisson.rvs(2.3, size=num_iterations)
 >>> num_entries
-array([4, 1, 4, 3, 2, 7, 7, 3, 2, 3])
+array([2, 3, 2, 3, 4, 1, 3, 0, 1, 3])
 >>> entry_times = va.empty(num_entries, dtype=float)
 >>> entry_times
-varray([[0., 0., 0., 0.],
-        [0.],
+varray([[0., 0.],
+        [0., 0., 0.],
+        [0., 0.],
+        [0., 0., 0.],
         [0., 0., 0., 0.],
+        [0.],
         [0., 0., 0.],
-        [0., 0.],
-        [0., 0., 0., 0., 0., 0., 0.],
-        [0., 0., 0., 0., 0., 0., 0.],
-        [0., 0., 0.],
-        [0., 0.],
+        [],
+        [0.],
         [0., 0., 0.]])
 >>> for k in range(num_iterations):
 ...     entry_times[k,:] = st.uniform.rvs(scale=10., size=num_entries[k])
 ... 
 >>> entry_times
-varray([[9.11111425, 8.80235022, 7.98956072, 5.57863532],
-        [5.99337245],
-        [5.72807246, 5.04486087, 7.54958135, 8.75118266],
-        [4.8508228, 1.70328922, 8.86390034],
-        [7.77699354, 7.42182174],
-        [0.73845188, 1.05198838, 6.05385314, 7.77881754, 2.57200461, 3.5...,
-        [8.42081378, 1.93889312, 1.31600043, 2.99279699, 9.44073059, 1.6...,
-        [7.59869959, 1.22768974, 9.16023183],
-        [3.20647385, 2.80067871],
-        [8.09444581, 1.77697536, 1.02075117]])
+varray([[9.30866133, 0.87799696],
+        [1.94942634, 6.75727647, 7.03525249],
+        [0.50324541, 6.46413786],
+        [8.21324675, 5.11158945, 0.26563948],
+        [4.43066161, 2.06960192, 9.81743012, 3.11660339],
+        [8.41385994],
+        [5.99932338, 8.85480271, 5.06270341],
+        [],
+        [0.95650628],
+        [7.63540707, 8.70081797, 0.15594892]])
 ```
+(side note: as you can see, rows with zero entries are supported)
+
 ## Saving to file
-Since varrays essentially just wrap two arrays (a `darray` and an `sarray`), one can save these in any way that one prefers; I recommend using `np.savez_compressed`.  I really recommend **against** accessing the `_darray` and `_sarray` attributes directly.  When one creates a varray by slicing another varray, for example, the `darray` of the sliced varray is identical to that of its parent varray.  Likewise with numpy arrays, they are really "views" to an underlying data array, and a sliced array might contain elements that are not complete and/or not contiguous in memory.  So one needs to "serialize" the underlying data before saving, to extract only the information that is needed for that particular object.  varray provides a member function `serialize_as_numpy_arrays` to do this, which returns a `dict` object two entries: one with key suffix `_d` (for the data array) and another with the key suffix `_s` (for the shape array).  So in the example above, with the varray called `entry_times`, one could serialize the data and save to an `npz` file as such:
+Since varrays essentially just wrap two arrays (a `darray` and an `sarray`), one can save these in any way that one prefers, e.g. numpy `npy` or `npz` format, or hdf5 format, etc.  These two arrays are stored as internal variables `_darray` and `_sarray`, though I really recommend **against** accessing these attributes directly.  When one creates a varray by slicing another varray, for example, the `darray` of the sliced varray is identical to that of its parent varray.  Likewise with numpy arrays, they are really "views" to an underlying data array, and a sliced array might contain elements that are not complete and/or not contiguous in memory.  So one needs to "serialize" the underlying data before saving, to extract only the information that is needed for that particular object.  varray provides a member function `serialize_as_numpy_arrays` to do this, which returns a `dict` object with two keys: one with key suffix `_d` (for the data array) and another with the key suffix `_s` (for the shape array).  So in the example above, with the varray called `entry_times`, one could serialize the data and save to an `npz` file as such:
 ```python
 >>> entry_times_serialized = entry_times.serialize_as_numpy_arrays(array_name='entry_times')
+>>> entry_times_serialized.keys()
+dict_keys(['entry_times_d', 'entry_times_s'])
 >>> entry_times_serialized
-{'entry_times_d': array(
+{'entry_times_d': array([9.30866133, 0.87799696, 1.94942634, 6.75727647, 7.03525249,
+       0.50324541, 6.46413786, 8.21324675, 5.11158945, 0.26563948,
+       4.43066161, 2.06960192, 9.81743012, 3.11660339, 8.41385994,
+       5.99932338, 8.85480271, 5.06270341, 0.95650628, 7.63540707,
+       8.70081797, 0.15594892]), 'entry_times_s': array([2, 3, 2, 3, 4, 1, 3, 0, 1, 3])}
 >>> np.savez_compressed(filename.npz, **entry_times_serialized)
 ```
-To then load
+To then later load this from file,
+```python
+>>> import numpy as np, varray as va
+>>> with np.load('filename.npz') as f:
+...     entry_times = va.varray(darray=f['entry_times_d'], sarray=f['entry_times_s'])
+... 
+>>> entry_times
+varray([[9.30866133, 0.87799696],
+        [1.94942634, 6.75727647, 7.03525249],
+        [0.50324541, 6.46413786],
+        [8.21324675, 5.11158945, 0.26563948],
+        [4.43066161, 2.06960192, 9.81743012, 3.11660339],
+        [8.41385994],
+        [5.99932338, 8.85480271, 5.06270341],
+        [],
+        [0.95650628],
+        [7.63540707, 8.70081797, 0.15594892]])
+```
+
+
