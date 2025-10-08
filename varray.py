@@ -327,7 +327,7 @@ class varray:
                 new_va[idx] = getattr(self[idx], op_name)()
             return new_va
     def flatten(self):
-        return self._darray
+        return self._reduce_array()
     def _reduce_darray(self):
         """
         If a varray was produced by slicing another varray, self._darray will still point
