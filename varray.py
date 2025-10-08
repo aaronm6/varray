@@ -61,7 +61,7 @@ class varray:
     Create a varray.
     
     Instantiation Parameters
-    ----------
+    ------------------------
     nested_array : list of arrays (optional, positional argument)
         A list (or tuple) of lists or arrays, that can be converted into a varray object.
         For example, [[1,2],[3,4,5],[6]] or [array([1,2]), array([3,4,5]), array([6])]
@@ -88,7 +88,30 @@ class varray:
         methods.
     csarray : ndarray (optional, keyword argument)
         Should not be provided by the user; same reason as for row_slice
+
+    Class methods and attributes
+    ----------------------------
+    shape : property (tuple)
+        A tuple containing the length of each row
+    dtype : property (type)
+        The dtype of the data contained in the varray
+    nbytes : property (int)
+        The number of bytes used by this varray; contains the nbytes of the darray, the sarray
+        and a third array called `csarray`.
+    empty_cols : property (str)
+        Describes what to do when slicing a column and a particular row does not have that
+        particular column.  Allowed values: `'remove'` (default) and `'fill'`.  If `'fill'`,
+        then the missing entries are filled in with `np.nan`.
+    flatten() : method
+        Returns the data in a 1d numpy array.
+    copy() : method
+        Returns a copy of the current varray (using `ndarray.copy` under the hood).
+    serialize_as_numpy_arrays(array_name='va') : method
+        Serializes the data and shape arrays into a dict object containing two numpy arrays, so
+        that they can be saved to disk.
     
+    Examples
+    --------
     Example 1:
     >>> import varray as va
     >>> nested_list = [[1,2,3],[4,5],[6,7,8,9],[10,11,12]]
@@ -130,14 +153,6 @@ class varray:
     >>> flat_shape_array = np.r_[3,2,4,3]
     >>> my_varray = va.varray(darray=flat_data_array, sarray=flat_shape_array)
     
-    Class methods and attributes:
-    shape
-    dtype
-    nbytes
-    empty_cols
-    flatten
-    copy
-    serialize_as_numpy_arrays
     """
     def __init__(
         self, 
