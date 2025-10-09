@@ -37,7 +37,7 @@ We can actually create a varray with that nested list:
 ```python
 >>> import varray as va
 >>> nested_data = [[2,2], [3,3,3], [4,4,4,4]]
->>> va1 = va.varray(nested_data)
+>>> va1 = va.varray(nested_data, dtype=float)
 >>> va1
 varray([[2., 2.],
         [3., 3., 3.],
@@ -92,11 +92,11 @@ True
 We can concatenate two or more varrays using `va.vstack`:
 ```python
 >>> va.vstack([va1, va2])
-varray([[2, 2],
-        [3, 3, 3],
-        [4, 4, 4, 4],
-        [2, 2],
-        [3, 3, 3]])
+varray([[2., 2.],
+        [3., 3., 3.],
+        [4., 4., 4., 4.],
+        [2., 2.],
+        [3., 3., 3.]])
 ```
 We can perform numpy-like operations on a varray, for example powering and raising:
 ```python
