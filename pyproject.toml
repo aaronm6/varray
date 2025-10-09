@@ -14,7 +14,7 @@ readme = "README.md"
 description = "A 2d numpy-like array object with variable-length rows"
 requires-python = ">=3.9.0"
 classifiers = ["Programming Language :: Python :: 3",]
-dependencies = ["numpy>=1.18.0"]
+dependencies = ["numpy>=1.26.0"]
 dynamic = ["version"]
 
 [project.urls]
