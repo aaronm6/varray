@@ -34,6 +34,7 @@ ones
 ones_like
 zeros
 zeros_like
+vstack
 version
 version_tuple
 """
@@ -42,7 +43,7 @@ import numpy as np
 import operator
 import re
 
-version = __version__ = '0.1.1'
+version = __version__ = '0.2.0'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like']
@@ -159,43 +160,107 @@ class varray:
         *args, 
         darray=None, 
         sarray=None, 
-        dtype=np.float64, 
+        dtype=None, 
         empty_cols='remove',
         row_slice=None,
         csarray=None):
-        if empty_cols not in ('remove','fill'):
-            raise ValueError("keyword 'empty_cols' must be 'remove' or 'fill'")
-        self._empty_cols = empty_cols
-        if isinstance(darray, np.ndarray) or darray is None:
+        
+        # Parse kwarg empty_cols
+        if not isinstance(empty_cols, str):
+            raise TypeError("keyword 'empty_cols' must be a str object")
+        if empty_cols.lower() not in ('remove','fill'):
+            raise ValueError("keyword 'empty_cols' must be either 'remove' or 'fill'")
+        self._empty_cols = empty_cols.lower()
+        
+        # check that row_slice and csarray are either both None, or neither is None:
+        if row_slice is None:
+            if csarray is not None:
+                raise TypeError("kwargs 'row_slice' is provided, then 'csarray' must also be provided " + \
+                    "and vice versa.")
+        # parse kwarg darray
+        if isinstance(darray, np.ndarray) or (darray is None):
             self._darray = darray
         else:
-            self._darray = np.array(darray)
-        if isinstance(sarray, np.ndarray) or sarray is None:
-            self._sarray = sarray
-        else:
-            self._sarray = np.array(sarray)
-        self._dtype = dtype
-        if (len(args) > 0) and isinstance(args[0],(list,tuple)):
-            self._sarray = np.array([len(item) for item in args[0]])
-            self._darray = np.array([item for sublist in args[0] for item in sublist], dtype=dtype)
-        if isinstance(self._sarray, np.ndarray):
-            if csarray is None:
-                self._csarray = (np.r_[0, self._sarray[:-1]]).cumsum()
-            elif isinstance(csarray, np.ndarray):
-                self._csarray = csarray
+            self._darray = np.array(darray) # this might throw an error, that's ok
+        
+        # parse kwarg sarray
+        if not isinstance(sarray, np.ndarray):
+            if sarray is None:
+                self._sarray = None
             else:
-                raise TypeError("csarray must be None or a numpy array")
+                self._sarray = np.array(sarray)
+        if isinstance(sarray, np.ndarray):
+            if not np.issubdtype(sarray.dtype, np.integer):
+                raise TypeError("keyword 'sarray' must be a numpy array with an integer dtype")
+            self._sarray = sarray
+        
+        # If a positional argument is given, check that it is a list, tuple, or np.ndarray.
+        # Arbitrary sequence objects like generators or iterators aren't allowed because
+        # we need to pass over them multiple times in parsing here, and those only can be
+        # passed over once.
+        if (len(args)>0):
+            if not isinstance(args[0], (list, tuple, np.ndarray)):
+                raise TypeError("If a positional argument is given, it must be an " + \
+                    "instance of list, tuple, or np.ndarray")
+            # Parse positional argument.  If given, this takes precedence over kwargs darray and sarray
+            if hasattr(args[0],'ndim') and args[0].ndim != 2:
+                raise ValueError("If a numpy array is provided as a positional argument, it must be 2d")
+            arg_lens = np.array([len(item) for item in args[0]], dtype=int)
+            arg_flat = np.array([item for sublist in args[0] for item in sublist])
+            if isinstance(args[0], np.ndarray) and (dtype is None):
+                arg_flat = arg_flat.astype(args[0].dtype)
+            if dtype is not None:
+                arg_flat = arg_flat.astype(dtype)
+            self._sarray = arg_lens
+            self._darray = arg_flat
+        
+        if self._sarray is not None:
+            if csarray is not None:
+                if not isinstance(csarray, np.ndarray):
+                    raise TypeError("kwarg csarray must be a numpy array")
+                self._csarray = csarray[row_slice]
+                self._sarray = self._sarray[row_slice]
+            else:
+                self._csarray = np.r_[0, self._sarray[:-1]].cumsum()
             if self._darray is None:
-                self._darray = np.empty(self._sarray.sum(), dtype=self._dtype)
+                self._darray = np.empty(self._sarray.sum(), dtype=dtype)
+        if hasattr(self._darray, 'dtype'):
+            self._dtype = self._darray.dtype
         else:
-            self._csarray = None
-        if isinstance(self._darray,np.ndarray) and (dtype != self._darray.dtype):
-            self._darray = self._darray.astype(dtype)
-        if row_slice is not None:
-            if not isinstance(row_slice, (slice, np.ndarray)):
-                raise TypeError("row_slice must be None or a slice object")
-            self._sarray = self._sarray[row_slice]
-            self._csarray = self._csarray[row_slice]
+            self._dtype = dtype
+    def set_sarray(self, new_sarray, dtype=None):
+        """
+        If a varray is created without any arguments, its sarray will be None and can then
+        later be defined with this function.  If the varray already has an sarray, then
+        this function will throw an exception.
+        
+        Parameters
+        ----------
+        new_sarray : list, tuple, np.ndarray
+            Array of ints that specify the lengths of the rows
+        dtype : type or None
+            Setting a sarray will also create an empty darray, and this keyword specifies
+            the dtype of the new darray. A value of None will result in numpy's default dtype,
+            which is usually np.float64
+        """
+        if self._sarray is not None:
+            raise TypeError("Cannot set shape array once it is created")
+        if not isinstance(new_sarray, (list, tuple, np.ndarray)):
+            raise TypeError("sarray must be a list, tuple, or np.ndarray")
+        if isinstance(new_sarray, np.ndarray):
+            if new_sarray.ndim != 1:
+                raise ValueError("sarray must be a 1d array")
+            if not np.issubdtype(new_sarray.dtype, np.integer):
+                raise TypeError("sarray must be of dtype int")
+            self._sarray = new_sarray
+        else:
+            if not all([isinstance(item, (int, np.integer)) for item in new_sarray]):
+                raise TypeError("sarray must be a sequence of integers")
+            self._sarray = np.array(new_sarray, dtype=int)
+        dt = self._dtype if dtype is None else dtype
+        self._darray = np.empty(self._sarray.sum(), dtype=dt)
+        self._csarray = np.r_[0, self._sarray[:-1]].cumsum()
+    
     def __getitem__(self, item):
         if isinstance(item, (int, np.integer)):
             idx_start = self._csarray[item]
@@ -238,14 +303,21 @@ class varray:
                 raise ValueError("Must give an integer for the row number")
             self[item[0]][item[1]] = val
     @property
+    def sarray(self):
+        return self._sarray
+    @property
     def shape(self):
         return tuple(self._sarray)
     @property
     def dtype(self):
-        return self._dtype
+        dt = self._darray.dtype if hasattr(self._darray,'dtype') else self._dtype
+        return dt
     @property
     def nbytes(self):
-        return self._darray.nbytes + self._sarray.nbytes + self._csarray.nbytes
+        darray_bytes = self._darray.nbytes if hasattr(self._darray,'nbytes') else 0
+        sarray_bytes = self._sarray.nbytes if hasattr(self._sarray,'nbytes') else 0
+        csarray_bytes = self._csarray.nbytes if hasattr(self._csarray,'nbytes') else 0
+        return darray_bytes + sarray_bytes + csarray_bytes
     @property
     def size(self):
         return len(self._darray)
@@ -261,7 +333,7 @@ class varray:
     def astype(self, dt):
         return varray(darray=self._darray, sarray=self._sarray, dtype=dt)
     def __len__(self):
-        return len(self._sarray)
+        return len(self._sarray) if hasattr(self._sarray,'__len__') else 0
     def __repr__(self):
         max_lines = 20
         numlines = min(len(self), max_lines)
@@ -646,14 +718,35 @@ def full_like(v_obj, fill_value, dtype=None):
     return varray(darray=darray, sarray=v_obj._sarray, dtype=dt)
 
 
-
-
-
-
-
-
-
-
-
-
+def vstack(va_list, dtype=None):
+    """
+    Intended to work much like numpy's vstack, but for varrays. The varrays must be provided
+    in a list or tuple.  np.vstack has some complicated behavior when setting the dtype, 
+    because it enforces some casting rules.  Here the behavior is much simpler.  If dtype
+    is provided, then the resulting varray is simply cast into that dtype, no questions
+    asked.
+    
+    Parameters
+    ----------
+    va_list : sequence (usually a list)
+        Each element in the sequence must be a 
+    dtype : type
+        The desired dtype of the concatenated varray
+    
+    Returns
+    -------
+    res: varray
+        The result of vertically stacking the varrays provided.
+    """
+    if not isinstance(va_list, (list, tuple)):
+        raise TypeError("va_list must be a list or tuple")
+    if not all([isinstance(item, varray) for item in va_list]):
+        raise TypeError("Elements of va_list must be varray objects.")
+    if (dtype is not None) and (not isinstance(dtype, type)):
+        raise TypeError("dtype must be None or a valid type")
+    darray = np.concatenate([item._reduce_darray() for item in va_list])
+    if (dtype is not None) and (darray.dtype != dtype):
+        darray = darray.astype(dtype)
+    sarray = np.concatenate([item._sarray for item in va_list]).astype(int)
+    return varray(darray=darray, sarray=sarray)
 
