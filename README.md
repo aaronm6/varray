@@ -37,7 +37,7 @@ We can actually create a varray with that nested list:
 ```python
 >>> import varray as va
 >>> nested_data = [[2,2], [3,3,3], [4,4,4,4]]
->>> va1 = va.varray(nested_data)
+>>> va1 = va.varray(nested_data, dtype=float)
 >>> va1
 varray([[2., 2.],
         [3., 3., 3.],
@@ -89,7 +89,16 @@ and here we can verify that this is a new view to the same data, without duplica
 True
 ```
 (here we have used the `_darray` attribute, which the user should not access).
-We can perform operations, for example powering and raising:
+We can concatenate two or more varrays using `va.vstack`:
+```python
+>>> va.vstack([va1, va2])
+varray([[2., 2.],
+        [3., 3., 3.],
+        [4., 4., 4., 4.],
+        [2., 2.],
+        [3., 3., 3.]])
+```
+We can perform numpy-like operations on a varray, for example powering and raising:
 ```python
 >>> va1**2
 varray([[4., 4.],
@@ -107,7 +116,11 @@ varray([[7.3890561, 7.3890561],
         [20.08553692, 20.08553692, 20.08553692],
         [54.59815003, 54.59815003, 54.59815003, 54.59815003]])
 ```
-Two varrays can be added, subtracted, multiplied, divide, etc., with the behavior intended to be the same as those operations would have on 2d numpy arrays.
+Two varrays can be added, subtracted, multiplied, divided, etc., with the behavior intended to be the same as those operations would have on 2d numpy arrays.
+
+**A note about broadcasting**
+
+We are limited in how we can broadcast shapes like in numpy.  In the example above with `va1**2`, we see that the only broadcasting allowed is with a scalar and a varray.  Otherwise, binary operations must be on two varrays with the same shape.
 
 We can create an empty varray and then fill in the rows.  Suppose we have serveral iterations of a process that produces a Poisson-random number of entries, and each entry gets a uniform random number:
 ```python
