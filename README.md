@@ -89,7 +89,16 @@ and here we can verify that this is a new view to the same data, without duplica
 True
 ```
 (here we have used the `_darray` attribute, which the user should not access).
-We can perform operations, for example powering and raising:
+We can concatenate two or more varrays using `va.vstack`:
+```python
+>>> va.vstack([va1, va2])
+varray([[2, 2],
+        [3, 3, 3],
+        [4, 4, 4, 4],
+        [2, 2],
+        [3, 3, 3]])
+```
+We can perform numpy-like operations on a varray, for example powering and raising:
 ```python
 >>> va1**2
 varray([[4., 4.],
