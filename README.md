@@ -116,7 +116,10 @@ varray([[7.3890561, 7.3890561],
         [20.08553692, 20.08553692, 20.08553692],
         [54.59815003, 54.59815003, 54.59815003, 54.59815003]])
 ```
-Two varrays can be added, subtracted, multiplied, divide, etc., with the behavior intended to be the same as those operations would have on 2d numpy arrays.
+Two varrays can be added, subtracted, multiplied, divided, etc., with the behavior intended to be the same as those operations would have on 2d numpy arrays.
+
+**A note about broadcasting**
+We are limited in how we can broadcast shapes like in numpy.  In the example above with `va1**2`, we see that the only broadcasting allowed is with a scalar and a varray.  Otherwise, binary operations must be on two varrays with the same shape.
 
 We can create an empty varray and then fill in the rows.  Suppose we have serveral iterations of a process that produces a Poisson-random number of entries, and each entry gets a uniform random number:
 ```python
