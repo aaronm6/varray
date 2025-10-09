@@ -27,16 +27,21 @@ etc.), which allocated the space, and then fill in the values later.
 
 Contents:
 
-varray : variable-array class. See its docstring for instantiation syntax
-empty
-empty_like
-ones
-ones_like
-zeros
-zeros_like
-vstack
-version
-version_tuple
+Class:
+    varray : variable-array class. See its docstring for instantiation syntax
+
+Functions:
+    empty
+    empty_like
+    ones
+    ones_like
+    zeros
+    zeros_like
+    vstack
+
+Misc:
+    version
+    version_tuple
 """
 
 import numpy as np
@@ -46,7 +51,7 @@ import re
 version = __version__ = '0.2.0'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
-__all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like']
+__all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like', 'full', 'full_like', 'vstack']
 
 _linewidth = np.get_printoptions()['linewidth']
 
@@ -61,11 +66,12 @@ class varray:
     """
     Create a varray.
     
-    Instantiation Parameters
-    ------------------------
+    Constructor Parameters
+    ----------------------
     nested_array : list of arrays (optional, positional argument)
         A list (or tuple) of lists or arrays, that can be converted into a varray object.
         For example, [[1,2],[3,4,5],[6]] or [array([1,2]), array([3,4,5]), array([6])]
+        Alternatively, a 2d numpy array can be given that will be converted into a varray.
     darray : None or 1d array or list or tuple (optional, keyword argument)
         The array that holds all the data values of the varray.
     sarray : None or 1d array of ints (or list or tuple) (optional, keyword argument)
