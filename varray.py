@@ -284,7 +284,8 @@ class varray:
                 if self._empty_cols == 'remove':
                     return self._darray[(self._csarray[cut_rows] + item[1])[item[0]]]
                 else:
-                    if isinstance(self._dtype(),(int, np.integer)):
+                    #if isinstance(self._dtype(),(int, np.integer)):
+                    if (self._dtype is int) or np.issubdtype(self._dtype, np.integer):
                         fill_value = np.iinfo(self._dtype).min
                     elif self._darray.dtype == bool:
                         fill_value = False
