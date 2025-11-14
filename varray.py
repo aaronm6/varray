@@ -48,7 +48,7 @@ import numpy as np
 import operator
 import re
 
-version = __version__ = '0.2.0'
+version = __version__ = '0.3.0'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like', 'full', 'full_like', 'vstack']
@@ -56,11 +56,39 @@ __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like'
 _linewidth = np.get_printoptions()['linewidth']
 
 _binops = ('add','and','mul','pow','sub','truediv','floordiv','eq','lt','gt','le','ge','mod','or','xor')
-_unops = ('abs','neg','pos')
+_unops = ('abs','neg','pos','conjugate','conj')
 _rowops_reduce = ('all','any','argmax','argmin','max','mean','min','prod','std','sum','var')
 _rowops_accumulate = ('cumprod','cumsum')
 
 _ufindrows = np.frompyfunc(lambda x,y: x-1 if y==0 else y, 2,1)
+
+def _rexplore_nesting(nested_list, depth=0):
+    """
+    Check that the nesting of an iterable is good, i.e. the depth is the same for all elements
+    If nesting is good: returns depth.  
+        A non-nested list (i.e. [1,2,3]) has depth of 0.
+        A singly-nested list (i.e. [[1,2],[3],[4,5,6]]) has depth of 1
+        etc.
+    If nesting is bad: raises ValueError
+        Bad nesting means that all elements are not the same depth. For example,
+        [[1,2],[[3,4],[5,6]]] is bad because the first element is a non-nested list,
+        but the second element is a singly-nested list.
+        [[1,2],3,[4,5,6]] is bad nesting
+    This function uses recursion; in order to prevent runaway recursion, the function
+    raises a ValueError if the depth of recursion is more than 10.
+    """
+    if depth > 10:
+        raise ValueError("Depth is too big; recursion is going nuts")
+    if hasattr(nested_list, '__len__'):
+        if len(nl) == 0:
+            return depth
+        depths = [_rexplore_nesting(item, depth=depth+1) for item in nested_list]
+        if len(set(depths)) != 1:
+            raise ValueError("Nesting is bad")
+        else:
+            return depths[0]
+    else:
+        return depth-1
 
 class varray:
     """
@@ -186,6 +214,8 @@ class varray:
         # parse kwarg darray
         if isinstance(darray, np.ndarray) or (darray is None):
             self._darray = darray
+            if isinstance(darray, np.ndarray) and (darray.ndim > 2):
+                raise ValueError("darray must be 1 or 2 dimensional")
         else:
             self._darray = np.array(darray) # this might throw an error, that's ok
         
@@ -193,6 +223,8 @@ class varray:
         if not isinstance(sarray, np.ndarray):
             if sarray is None:
                 self._sarray = None
+                if isinstance(sarray, np.ndarray) and (sarray.ndim != 1):
+                    raise ValueError("sarray must be 1 dimensional")
             else:
                 self._sarray = np.array(sarray)
         if isinstance(sarray, np.ndarray):
@@ -211,6 +243,9 @@ class varray:
             # Parse positional argument.  If given, this takes precedence over kwargs darray and sarray
             if hasattr(args[0],'ndim') and args[0].ndim != 2:
                 raise ValueError("If a numpy array is provided as a positional argument, it must be 2d")
+            array_depth = _rexplore_nesting(args[0])
+            if array_depth not in (2,3):
+                raise ValueError("Nested input list must be singly or doubly nested, not more or less")
             arg_lens = np.array([len(item) for item in args[0]], dtype=int)
             arg_flat = np.array([item for sublist in args[0] for item in sublist])
             if isinstance(args[0], np.ndarray) and (dtype is None):
@@ -384,7 +419,13 @@ class varray:
         return varray(darray=getattr(operator,op_name)(other,self._darray),sarray=self._sarray, dtype=dt)
     def _unary_op(self, op_name):
         dt = self.dtype
-        return varray(darray=getattr(operator,op_name)(self._darray), sarray=self._sarray, dtype=dt)
+        new_darray = self._reduce_darray()
+        if hasattr(np, op_name):
+            return varray(darray=getattr(np,op_name)(new_darray), sarray=self._sarray, dtype=dt)
+        elif hasattr(operator, op_name):
+            return varray(darray=getattr(operator,op_name)(self._darray), sarray=self._sarray, dtype=dt)
+        else:
+            raise TypeError(f"Function {op_name} not recognized")
     def _row_op_reduce(self, op_name, axis=None):
         dt = bool if op_name in ('all','any') else self.dtype
         if axis is None:
@@ -485,23 +526,25 @@ for op_name in _binops:
 
 # Because binary operations aren't commutative when var types are switched: i.e. __sub__ and __rsub__
 # e.g. if va is a varray, va-2 is handled by __sub__ but that won't work for 2-va, for which
-# on needs __rsub__
+# one needs __rsub__
 for op_name in _binops:
     def method(self, other, op=op_name):
         return self._rbinary_op(other, op)
     setattr(varray, f'__r{op_name}__', method)
 
+# Similar for unitary operations
 for op_name in _unops:
     def method(self, op=op_name):
         return self._unary_op(op)
     setattr(varray, f'__{op_name}__', method)
 
-# Similar for row-wise operations
+# Similar for row-wise operations that reduce
 for op_name in _rowops_reduce:
     def method(self, op=op_name, axis=None):
         return self._row_op_reduce(op, axis=axis)
     setattr(varray, op_name, method)
 
+# similar for row-wise operations that accumulate
 for op_name in _rowops_accumulate:
     def method(self, op=op_name, axis=None):
         return self._row_op_accumulate(op, axis=axis)
