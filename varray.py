@@ -48,7 +48,7 @@ import numpy as np
 import operator
 import re
 
-version = __version__ = '0.2.0'
+version = __version__ = '0.2.1'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like', 'full', 'full_like', 'vstack']
@@ -60,7 +60,8 @@ _unops = ('abs','neg','pos')
 _rowops_reduce = ('all','any','argmax','argmin','max','mean','min','prod','std','sum','var')
 _rowops_accumulate = ('cumprod','cumsum')
 
-_ufindrows = np.frompyfunc(lambda x,y: x-1 if y==0 else y, 2,1)
+_ufindrows = np.frompyfunc(lambda x, y: x-1 if y==0 else y, 2, 1)
+_urowindex = np.frompyfunc(lambda x, y: x if y==-1 else y, 2, 1)
 
 class varray:
     """
@@ -111,6 +112,9 @@ class varray:
         then the missing entries are filled in with `np.nan`.
     flatten() : method
         Returns the data in a 1d numpy array.
+    get_flat_row_index(): method
+        Returns an numpy array (dtype=int) the same length as the flattened array, whose elements
+        indicate which row each element of the flattened array came from.
     copy() : method
         Returns a copy of the current varray (using `ndarray.copy` under the hood).
     serialize_as_numpy_arrays(array_name='va') : method
@@ -406,7 +410,28 @@ class varray:
                 new_va[idx] = getattr(self[idx], op_name)()
             return new_va
     def flatten(self):
-        return self._reduce_array()
+        return self._reduce_darray()
+    def get_flat_row_index(self):
+        """
+        If one flattens the varray, information is lost as to which row a particular element
+        came from.  This function helps with that.  It produces a 1d numpy array, the same
+        length as the flattened array, whose elements tell which row a particular element
+        of the flattened array came from.  For example, if the array is:
+        varray([[1],
+                [2, 3],
+                [4, 5, 6]])
+        The flattened array will be:
+        array([1, 2, 3, 4, 5, 6])
+        This function will produce the "flat row index", which in this case would be:
+        array([0, 1, 1, 2, 2, 2])
+        
+        So if you found the value 5 in the flattened array, the flat-row-index tells you
+        that it came from row 2 (assuming row numbering starts at 0).
+        """
+        tag_array = -np.ones_like(self._reduce_darray(), dtype=int)
+        cs_index = np.r_[:len(self._csarray)]
+        tag_array[self._csarray] = cs_index
+        return _urowindex.accumulate(tag_array).astype(int)
     def _reduce_darray(self):
         """
         If a varray was produced by slicing another varray, self._darray will still point
