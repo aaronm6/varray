@@ -48,7 +48,7 @@ import numpy as np
 import operator
 import re
 
-version = __version__ = '0.2.1'
+version = __version__ = '0.2.2'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 __all__ = ['varray','empty','empty_like','zeros','zeros_like','ones','ones_like', 'full', 'full_like', 'vstack']
@@ -62,6 +62,7 @@ _rowops_accumulate = ('cumprod','cumsum')
 
 _ufindrows = np.frompyfunc(lambda x, y: x-1 if y==0 else y, 2, 1)
 _urowindex = np.frompyfunc(lambda x, y: x if y==-1 else y, 2, 1)
+_ucolindex = np.frompyfunc(lambda x, y: x+1 if y<0 else 0, 2, 1)
 
 class varray:
     """
@@ -115,6 +116,9 @@ class varray:
     get_flat_row_index(): method
         Returns an numpy array (dtype=int) the same length as the flattened array, whose elements
         indicate which row each element of the flattened array came from.
+    get_flat_col_index(): method
+        Returns an numpy array (dtype=int) the same length as the flattened array, whose elements
+        indicate which column each element of the flattened array came from.
     copy() : method
         Returns a copy of the current varray (using `ndarray.copy` under the hood).
     serialize_as_numpy_arrays(array_name='va') : method
@@ -432,6 +436,15 @@ class varray:
         cs_index = np.r_[:len(self._csarray)]
         tag_array[self._csarray] = cs_index
         return _urowindex.accumulate(tag_array).astype(int)
+    def get_flat_col_index(self):
+        """
+        As get_flat_row_index returns a companion array to the flattened data array, which
+        indicates which row a particular element came from, this function does the same but
+        indicates which column a particular element came from.
+        """
+        tag_array = -np.ones_like(self._reduce_darray(), dtype=int)
+        tag_array[self._csarray] = 0
+        return _ucolindex.accumulate(tag_array).astype(int)
     def _reduce_darray(self):
         """
         If a varray was produced by slicing another varray, self._darray will still point
