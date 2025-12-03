@@ -21,9 +21,9 @@ Here, varray (for "variable array") provides a numpy-like array type that suppor
 2. awk is a large package that involves compiled c++ code and its plethora of functionalities might not always be needed.  Hence the desire for a light-weight alternative that is written in pure python.
 
 ## Usage
-A varray object essentially wraps two numpy arrays: a `darray` ("data array") and an `sarray` ("shape array").  The `darray` stores all the data values in a contiguous 1d array.  The `sarray` is an array of ints which describe the length of each row of the array.  If the varray could be described by the nested list,
+A varray object essentially wraps two numpy arrays: a `darray` ("data array") and an `sarray` ("shape array").  The `darray` stores all the data values in a contiguous array.  The `sarray` is an array of ints which describe the length of each row of the array.  If the data could be described by the nested list,
 ```
-[ [0., 1.], [2., 3., 4.], [5.], [6., 7., 8., 9.]]
+[ [0., 1.], [2., 3., 4.], [5.], [6., 7., 8., 9.] ]
 ```
 then `darray` would be 
 ```
@@ -33,7 +33,13 @@ and the `sarray` would be
 ```
 [2, 3, 1, 4]
 ```
-We can actually create a varray with that nested list:
+which are the lengths of each of the nested lists above.  When the varray is created, an array of indices is calculated for the start of each sublist; this is stored internally as the `csarray`, which in this case is
+```python
+[0, 2, 5, 6]
+```
+It is named `csarray` because it is calculated from the cumulative sum over the `sarray`.  In this way, `csarray` acts as a kind of array of addresses to the `darray`.  When a varray is sliced, the new varray can point to the orginal `darray`, but with modified `sarray` and `csarray`, thereby avoiding the need to replicate the data: in this way, varray slicing produces a "view" in much the same way that numpy arrays work.
+
+We can create a varray in many ways; here we will use the original nested list above:
 ```python
 >>> import varray as va
 >>> nested_data = [ [0., 1.], [2., 3., 4.], [5.], [6., 7., 8., 9.]]
