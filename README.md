@@ -1,5 +1,5 @@
 # varray
-A 2d numpy-like array that supports variable-length rows
+A numpy-like array that supports variable-length rows
 
 ## Installation
 ```
@@ -21,177 +21,143 @@ Here, varray (for "variable array") provides a numpy-like array type that suppor
 2. awk is a large package that involves compiled c++ code and its plethora of functionalities might not always be needed.  Hence the desire for a light-weight alternative that is written in pure python.
 
 ## Usage
-A varray object essentially wraps two numpy arrays: a `darray` ("data array") and an `sarray` ("shape array").  The `darray` stores all the data values in a contiguous 1d array.  The `sarray` is an array of ints which describe the length of each row of the array.  If the varray could be described by the nested list,
+A varray object essentially wraps two numpy arrays: a `darray` ("data array") and an `sarray` ("shape array").  The `darray` stores all the data values in a contiguous array.  The `sarray` is an array of ints which describe the length of each row of the array.  If the data could be described by the nested list,
 ```
-[[2,2],[3,3,3],[4,4,4,4]]
+[ [0., 1.], [2., 3., 4.], [5.], [6., 7., 8., 9.] ]
 ```
 then `darray` would be 
 ```
-[2,2,3,3,3,4,4,4,4]
+[0., 1., 2., 3., 4., 5., 6., 7., 8., 9.]
 ```
 and the `sarray` would be
 ```
-[2,3,4]
+[2, 3, 1, 4]
 ```
-We can actually create a varray with that nested list:
+which are the lengths of each of the nested lists above.  When the varray is created, an array of indices is calculated for the start of each sublist; this is stored internally as the `csarray`, which in this case is
+```python
+[0, 2, 5, 6]
+```
+It is named `csarray` because it is calculated from the cumulative sum over the `sarray`.  In this way, `csarray` acts as a kind of array of addresses to the `darray`.  When a varray is sliced, the new varray can point to the orginal `darray`, but with modified `sarray` and `csarray`, thereby avoiding the need to replicate the data: in this way, varray slicing produces a "view" in much the same way that numpy arrays work.
+
+We can create a varray in many ways; here we will use the original nested list above:
 ```python
 >>> import varray as va
->>> nested_data = [[2,2], [3,3,3], [4,4,4,4]]
+>>> nested_data = [ [0., 1.], [2., 3., 4.], [5.], [6., 7., 8., 9.]]
 >>> va1 = va.varray(nested_data, dtype=float)
 >>> va1
-varray([[2., 2.],
-        [3., 3., 3.],
-        [4., 4., 4., 4.]])
+varray([[0. 1.]
+        [2. 3. 4.]
+        [5.]
+        [6. 7. 8. 9.]], dtype=float64)
 ```
 We can perform some basic slicing.  For example, picking off the first column (i.e. first element of each row) is the same slicing as in a 2d numpy array:
 ```python
 >>> va1[:,0]
-array([2., 3., 4.])
+varray([0.]
+       [2.]
+       [5.]
+       [6.]], dtype=float64)
 ```
-Note that the sliced object is a numpy array when possible.  We can pick off the third column in the same way:
+This object can be passed to `matplotlib.pyplot.plot`, for example.  We can also slice a column that not all rows have:
 ```python
 >>> va1[:,2]
-array([3., 4.])
+varray([[]
+        [4.]
+        []
+        [8.]], dtype=float64)
 ```
-Note that the first row does not have three elements, so it has been omitted from the returned numpy array.  We can change that behavior by changing the `empty_cols` attribute from `remove` to `fill`, and then empty columns will be filled in with `np.nan`:
-```python
->>> va1.empty_cols
-'remove'
->>> va1.empty_cols = 'fill'
->>> va1[:,2]
-array([nan,  3.,  4.])
-```
-
 We can sum over rows:
 ```python
 >>> va1.sum(axis=1)
-array([ 4., 9., 16.])
+array([ 1., 9., 5., 30.])
 ```
-or also do a cumulative sum:
+or sum over columns:
+```python
+>>> va1.sum(axis=0)
+array([13., 11., 12., 9.])
+```
+where rows that don't have the specified column don't contribute.
+We can also do a cumulative sum:
 ```python
 >>> va1.cumsum(axis=1)
-varray([[2., 4.],
-        [3., 6., 9.],
-        [4., 8., 12., 16.]])
+varray([[0. 1.]
+        [2. 5. 9.]
+        [5.]
+        [ 6. 13. 21. 30.]], dtype=float64)
 ```
-These operations (sum, cumsum, and similar) can be performed without specifying the axis; in that case, the operation is performed over the 1d `darray`.  Column-wise operations are not permitted.
+Slices of varrays are "views" to the original data, so that data is not reproduced.  This behavior is similar to how numpy array "views" work.  For example, we could slice just the even rows:
+```python
+>>> va1_even = va1[::2,...]
+>>> va1_even
+varray([[0. 1.]
+        [5.]], dtype=float)
+>>> va1._darray
+array([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.])
+>>> hex(va1._darray.ctypes.data)  # gives the memory address of the first element in the array
+'0x600000eaeda0'
+>>> va1_even._darray
+array([0., 1., 2., 3., 4., 5., 6., 7., 8., 9.])
+>>> hex(va1_even._darray.ctypes.data)  # gives the memory address of the first element in the array
+'0x600000eaeda0'
+```
+Notice that the internal data of `va1` and `va1_even` is the same array, with data pointing to the same point in memory.
 
-We can slice the array, removing the last row
+We can make multidimensional arrays
 ```python
->>> va2 = va1[:-1]
+>>> darray2 = np.vstack([np.r_[:10.], np.r_[100.:110.]])
+>>> darray2
+array([[  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.],
+       [100., 101., 102., 103., 104., 105., 106., 107., 108., 109.]])
+>>> sarray = np.r_[2,3,1,4]
+>>> va2 = va.varray(darray=darray2, sarray=sarray)
 >>> va2
-varray([[2., 2.],
-        [3., 3., 3.]])
+varray([[[  0.   1.]
+         [100. 101.]]
+
+        [[  2.   3.   4.]
+         [102. 103. 104.]]
+
+        [[  5.]
+         [105.]]
+
+        [[  6.   7.   8.   9.]
+         [106. 107. 108. 109.]]], dtype=float64)
 ```
-and here we can verify that this is a new view to the same data, without duplication of the data:
+This behaves like a numpy (4,2,N) array, where N is variable here.  We can slice this up too:
 ```python
->>> va2._darray is va1._darray
-True
+>>> va2[:,1,:]
+varray([[100. 101.]
+        [102. 103. 104.]
+        [105.]
+        [106. 107. 108. 109.]], dtype=float64)
 ```
-(here we have used the `_darray` attribute, which the user should not access).
-We can concatenate two or more varrays using `va.vstack`:
+Math operations on and between varrays, and between varrays and numbers, works just like numpy arrays.
+
+Varrays can be cast as numpy masked arrays:
 ```python
->>> va.vstack([va1, va2])
-varray([[2., 2.],
-        [3., 3., 3.],
-        [4., 4., 4., 4.],
-        [2., 2.],
-        [3., 3., 3.]])
+>>> va1
+varray([[0. 1.]
+        [2. 3. 4.]
+        [5.]
+        [6. 7. 8. 9.]], dtype=float64)
+>>> va1.to_ma()
+masked_array(
+  data=[[0.0, 1.0, --, --],
+        [2.0, 3.0, 4.0, --],
+        [5.0, --, --, --],
+        [6.0, 7.0, 8.0, 9.0]],
+  mask=[[False, False,  True,  True],
+        [False, False, False,  True],
+        [False,  True,  True,  True],
+        [False, False, False, False]],
+  fill_value=1e+20)
 ```
-We can perform numpy-like operations on a varray, for example powering and raising:
-```python
->>> va1**2
-varray([[4., 4.],
-        [9., 9., 9.],
-        [16., 16., 16., 16.]])
->>> 2**va1
-varray([[4., 4.],
-        [8., 8., 8.],
-        [16., 16., 16., 16.]])
-```
-and exponentiating:
-```python
->>> np.exp(va1)
-varray([[7.3890561, 7.3890561],
-        [20.08553692, 20.08553692, 20.08553692],
-        [54.59815003, 54.59815003, 54.59815003, 54.59815003]])
-```
-Two varrays can be added, subtracted, multiplied, divided, etc., with the behavior intended to be the same as those operations would have on 2d numpy arrays.
 
 **A note about broadcasting**
 
-We are limited in how we can broadcast shapes like in numpy.  In the example above with `va1**2`, we see that the only broadcasting allowed is with a scalar and a varray.  Otherwise, binary operations must be on two varrays with the same shape.
+We are limited in how we can broadcast shapes like in numpy.  Only scalars can be broadcast to varrays.
 
-We can create an empty varray and then fill in the rows.  Suppose we have serveral iterations of a process that produces a Poisson-random number of entries, and each entry gets a uniform random number:
-```python
->>> import numpy as np
->>> import varray as va
->>> import scipy.stats as st
->>> 
->>> num_iterations = 10
->>> num_entries = st.poisson.rvs(2.3, size=num_iterations)
->>> num_entries
-array([2, 3, 2, 3, 4, 1, 3, 0, 1, 3])
->>> entry_times = va.empty(num_entries, dtype=float)
->>> entry_times
-varray([[0., 0.],
-        [0., 0., 0.],
-        [0., 0.],
-        [0., 0., 0.],
-        [0., 0., 0., 0.],
-        [0.],
-        [0., 0., 0.],
-        [],
-        [0.],
-        [0., 0., 0.]])
->>> for k in range(num_iterations):
-...     entry_times[k,:] = st.uniform.rvs(scale=10., size=num_entries[k])
-... 
->>> entry_times
-varray([[9.30866133, 0.87799696],
-        [1.94942634, 6.75727647, 7.03525249],
-        [0.50324541, 6.46413786],
-        [8.21324675, 5.11158945, 0.26563948],
-        [4.43066161, 2.06960192, 9.81743012, 3.11660339],
-        [8.41385994],
-        [5.99932338, 8.85480271, 5.06270341],
-        [],
-        [0.95650628],
-        [7.63540707, 8.70081797, 0.15594892]])
-```
-(side note: as you can see, rows with zero entries are supported)
+We can use `va.empty`, `va.zeros`, etc., just like their numpy equivalents.
 
 ## Saving to file
-Since varrays essentially just wrap two arrays (a `darray` and an `sarray`), one can save these in any way that one prefers, e.g. numpy `npy` or `npz` format, or hdf5 format, etc.  These two arrays are stored as internal variables `_darray` and `_sarray` in the varray object, though I really recommend **against** accessing these attributes directly.  When one creates a varray by slicing another varray, for example, the `darray` of the sliced varray is identical to that of its parent varray.  Likewise with numpy arrays, they are really "views" to an underlying data array, and a sliced array might contain elements that are not complete and/or not contiguous in memory.  So one needs to "serialize" the underlying data before saving, to extract only the information that is needed for that particular object.  varray provides a member function `serialize_as_numpy_arrays` to do this, which returns a `dict` object with two keys: one with key suffix `_d` (for the data array) and another with the key suffix `_s` (for the shape array).  So in the example above, with the varray called `entry_times`, one could serialize the data and save to an `npz` file like so:
-```python
->>> entry_times_serialized = entry_times.serialize_as_numpy_arrays(array_name='entry_times')
->>> entry_times_serialized.keys()
-dict_keys(['entry_times_d', 'entry_times_s'])
->>> entry_times_serialized
-{'entry_times_d': array([9.30866133, 0.87799696, 1.94942634, 6.75727647, 7.03525249,
-       0.50324541, 6.46413786, 8.21324675, 5.11158945, 0.26563948,
-       4.43066161, 2.06960192, 9.81743012, 3.11660339, 8.41385994,
-       5.99932338, 8.85480271, 5.06270341, 0.95650628, 7.63540707,
-       8.70081797, 0.15594892]), 'entry_times_s': array([2, 3, 2, 3, 4, 1, 3, 0, 1, 3])}
->>> np.savez_compressed(filename.npz, **entry_times_serialized)
-```
-To then later load this from file,
-```python
->>> import numpy as np, varray as va
->>> with np.load('filename.npz') as f:
-...     entry_times = va.varray(darray=f['entry_times_d'], sarray=f['entry_times_s'])
-... 
->>> entry_times
-varray([[9.30866133, 0.87799696],
-        [1.94942634, 6.75727647, 7.03525249],
-        [0.50324541, 6.46413786],
-        [8.21324675, 5.11158945, 0.26563948],
-        [4.43066161, 2.06960192, 9.81743012, 3.11660339],
-        [8.41385994],
-        [5.99932338, 8.85480271, 5.06270341],
-        [],
-        [0.95650628],
-        [7.63540707, 8.70081797, 0.15594892]])
-```
-
-
+The provided methods `va.save` is simply a wrapper for `numpy.savez_compressed`, but it applies a suffix of `.vrz`; it handles the saving of a varray's `darray` and `sarray`. Numpy regular arrays and numpy masked arrays can also be provided.  The paired `va.load` is also just a wrapper for `numpy.load`, but it detects which arrays should go into varrays and creates those, and the same for numpy masked arrays.

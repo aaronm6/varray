@@ -11,7 +11,7 @@ authors = [{name = "Aaron M.", email = "aaronm6@gmail.com"}]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 readme = "README.md"
-description = "A 2d numpy-like array object with variable-length rows"
+description = "A numpy-like array object with variable-length rows"
 requires-python = ">=3.9.0"
 classifiers = ["Programming Language :: Python :: 3",]
 dependencies = ["numpy>=1.26.0"]
