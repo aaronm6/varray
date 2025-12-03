@@ -11,13 +11,24 @@ pip install git+https://github.com/aaronm6/varray.git
 ```
 
 ## Description
-Sometimes one needs to store data in a list of sublists.  If all the sublists are the same size and their contents the same data type, then a 2d numpy array is a very useful and efficient way to store the data; data operations are vectorized and optimized with compiled machine code.  However, if the condition that each sublist contains the same number of elements is not met, numpy is not much help.  
+Sometimes one needs to store data in a list of sublists.  If all the sublists are the same size and their contents the same data type, then a numpy array is a very useful and efficient way to store the data; data operations are vectorized and optimized with compiled machine code.  However, if the condition that each sublist contains the same number of elements is not met, numpy is not much help.  
 
-Here, varray (for "variable array") provides a numpy-like array type that supports 2d arrays with variable-length rows.  It is "numpy-like" in that it behaves in much the same way that numpy arrays do, operations are vectorized, slicing produces "views" instead of duplicating data, etc.  Most vectorized operations that work on numpy arrays also seamlessly work on varrays (e.g. `np.exp`, `np.sin`, etc., also binary operations).
+Put another way, numpy allows
+```python
+array([[1, 2, 3],
+       [4, 5, 6]])
+```
+but **not**
+```python
+array([[1, 2],
+       [4, 5, 6]])
+```
 
-**Why reinvent the wheel, when [awkward](https://awkward-array.org/doc/main/) (awk) arrays exist?**  Awk arrays do all this, are efficient and versatile and should be used when one's use case aligns with their capabilities.  However, I found myself avoiding them in my own work for two reasons:
+Here, **varray** (for "variable array") provides a numpy-like array type that supports multi-dimensional arrays with variable-length rows.  It is "numpy-like" in that it behaves in much the same way that numpy arrays do, operations are vectorized, slicing produces "views" instead of duplicating data, etc.  Most vectorized operations that work on numpy arrays also seamlessly work on varrays (e.g. `np.exp`, `np.sin`, etc., also binary operations).  To be clear, only one dimension of a varray may be variable: the last dimension.
 
-1. awk arrays are IMMUTABLE, and hence read-only.  This means they're great to read from, but what if you actually want to use them to store data in a script?  For example, you cannot allocate the awk-array's memory and then fill rows with a loop.  This used to be possible in earlier versions of awk, but has since been removed.  This is my main motivation for creating varray: awk arrays' immutability makes them unusable for the vast majority of my own use cases.
+**Why reinvent the wheel, when [awkward](https://awkward-array.org/doc/main/) (awk) arrays exist?**  Awk arrays do all this, are efficient and versatile and are an excellent tool when one's needs align with the features they provide.  However, I found myself avoiding awk arrays in my own work for two reasons:
+
+1. awk arrays are IMMUTABLE, and hence read-only.  This means they're great to read from, but tricky to use if you actually want to use them in a script or notebook.  For example, a common usage of numpy arrays is to initialize an empty 2d array with np.empty(...) and then fill in the rows in a loop.  This is possible with numpy arrays because they are mutable.  But one cannot do this with awk arrays.  This used to be possible in earlier versions of awk, but this important functionality has since been removed.  This is my main motivation for creating varray: awk arrays' immutability makes them unusable for the vast majority of my own use cases.
 2. awk is a large package that involves compiled c++ code and its plethora of functionalities might not always be needed.  Hence the desire for a light-weight alternative that is written in pure python.
 
 ## Usage
@@ -33,7 +44,7 @@ and the `sarray` would be
 ```
 [2, 3, 1, 4]
 ```
-which are the lengths of each of the nested lists above.  When the varray is created, an array of indices is calculated for the start of each sublist; this is stored internally as the `csarray`, which in this case is
+which are the lengths of each of the sublists above.  When the varray is created, an array of indices is calculated for the start of each sublist; this is stored internally as the `csarray`, which in this case is
 ```python
 [0, 2, 5, 6]
 ```
