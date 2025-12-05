@@ -1,4 +1,7 @@
 # varray
+
+[![PyPI](https://img.shields.io/pypi/v/varray.svg?style=flat)](https://pypi.org/project/varray/)
+
 A numpy-like array that supports variable-length rows
 
 ## Installation
@@ -31,7 +34,6 @@ Here, **varray** (for "variable array") provides a numpy-like array type that su
 1. awk arrays are IMMUTABLE, and hence read-only.  This means they're great to read from, but tricky to use if you actually want to use them in a script or notebook.  For example, a common usage of numpy arrays is to initialize an empty 2d array with np.empty(...) and then fill in the rows in a loop.  This is possible with numpy arrays because they are mutable.  But one cannot do this with awk arrays.  This used to be possible in earlier versions of awk, but this important functionality has since been removed.  This is my main motivation for creating varray: awk arrays' immutability makes them unusable for the vast majority of my own use cases.
 2. awk is a large package that involves compiled c++ code and its plethora of functionalities might not always be needed.  Hence the desire for a light-weight alternative that is written in pure python.
 
-## Usage
 A varray object essentially wraps two numpy arrays: a `darray` ("data array") and an `sarray` ("shape array").  The `darray` stores all the data values in a contiguous array.  The `sarray` is an array of ints which describe the length of each row of the array.  If the data could be described by the nested list,
 ```
 [ [0., 1.], [2., 3., 4.], [5.], [6., 7., 8., 9.] ]
@@ -50,6 +52,7 @@ which are the lengths of each of the sublists above.  When the varray is created
 ```
 It is named `csarray` because it is calculated from the cumulative sum over the `sarray`.  In this way, `csarray` acts as a kind of array of addresses to the `darray`.  When a varray is sliced, the new varray can point to the orginal `darray`, but with modified `sarray` and `csarray`, thereby avoiding the need to replicate the data: in this way, varray slicing produces a "view" in much the same way that numpy arrays work.
 
+## Usage
 We can create a varray in many ways; here we will use the original nested list above:
 ```python
 >>> import varray as va
@@ -64,10 +67,10 @@ varray([[0. 1.]
 We can perform some basic slicing.  For example, picking off the first column (i.e. first element of each row) is the same slicing as in a 2d numpy array:
 ```python
 >>> va1[:,0]
-varray([0.]
-       [2.]
-       [5.]
-       [6.]], dtype=float64)
+varray([[0.]
+        [2.]
+        [5.]
+        [6.]], dtype=float64)
 ```
 This object can be passed to `matplotlib.pyplot.plot`, for example.  We can also slice a column that not all rows have:
 ```python
@@ -171,4 +174,4 @@ We are limited in how we can broadcast shapes like in numpy.  Only scalars can b
 We can use `va.empty`, `va.zeros`, etc., just like their numpy equivalents.
 
 ## Saving to file
-The provided methods `va.save` is simply a wrapper for `numpy.savez_compressed`, but it applies a suffix of `.vrz`; it handles the saving of a varray's `darray` and `sarray`. Numpy regular arrays and numpy masked arrays can also be provided.  The paired `va.load` is also just a wrapper for `numpy.load`, but it detects which arrays should go into varrays and creates those, and the same for numpy masked arrays.
+The provided method `va.save` is simply a wrapper for `numpy.savez_compressed`, but it accepts varrays (and numpy arrays and masked arrays) and applies a suffix of `.vrz`; it handles the saving of a varray's `darray` and `sarray`.  The paired `va.load` is also just a wrapper for `numpy.load`, but it detects which arrays should go into varrays and creates those, and the same for numpy masked arrays.
