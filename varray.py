@@ -671,6 +671,8 @@ class varray(_varray_base, np.lib.mixins.NDArrayOperatorsMixin):
             else:
                 return NotImplemented
         return self.__class__(darray=ufunc(*scalars, **kwargs), sarray=self.sarray)
+    def __array_function__(self, func, types, args, kwargs):
+        return self.__class__(func(args[0].to_ma(), *args[1:], **kwargs))
     def serialize_as_numpy_arrays(self, array_name='va'):
         """
         Since varrays are simply wrappers of a pair of numpy arrays, we can just use numpy's savez
