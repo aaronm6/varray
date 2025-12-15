@@ -62,7 +62,7 @@ __all__ = ['varray','empty','empty_like','ones','ones_like','zeros','zeros_like'
     'save','load','row_concat','inner_concat','inner_stack']
 
 
-version = __version__ = '1.0.1'
+version = __version__ = '1.0.2'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 _linewidth = np.get_printoptions()['linewidth']
@@ -671,6 +671,8 @@ class varray(_varray_base, np.lib.mixins.NDArrayOperatorsMixin):
             else:
                 return NotImplemented
         return self.__class__(darray=ufunc(*scalars, **kwargs), sarray=self.sarray)
+    def __array_function__(self, func, types, args, kwargs):
+        return self.__class__(func(args[0].to_ma(), *args[1:], **kwargs))
     def serialize_as_numpy_arrays(self, array_name='va'):
         """
         Since varrays are simply wrappers of a pair of numpy arrays, we can just use numpy's savez
