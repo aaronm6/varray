@@ -115,7 +115,7 @@ def unpack_nested_list(nested_list):
     darray_ndim = darray.ndim
     re_pose = [(item+1)%darray_ndim for item in range(darray_ndim)]
     darray = darray.transpose(*re_pose)
-    sarray = np.array([len(item) for item in nested_list])
+    sarray = np.array([len(item) for item in nested_list], dtype=np.int16)
     return darray, sarray
 
 def unpack_masked_array(ma_obj):
@@ -133,6 +133,8 @@ def unpack_masked_array(ma_obj):
     d_array = ma_manipulated.data[...,ma_notmask[final_slice]]
     s_array_item = (slice(None,None,None),)+(0,)*(ndim-2)+(slice(None,None,None),)
     s_array = (~ma_obj.mask[(slice(None,None,None),)+(0,)*(ndim-2)+(slice(None,None,None),)]).sum(axis=-1)
+    if not np.issubdtype(s_array.dtype, np.dtype('int16')):
+        s_array = s_array.astype(np.int16)
     return d_array, s_array
 
 def expand_slices(item, varray_dims):
