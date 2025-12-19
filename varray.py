@@ -83,8 +83,8 @@ def r_explore_nesting(nested_list, depth=0):
     If nesting is good: returns depth.  
     If nesting is bad: raises ValueError
     
-        A non-nested list (i.e. [1,2,3]) has depth of 0.
-        A singly-nested list (i.e. [[1,2],[3],[4,5,6]]) has depth of 1
+        A non-nested list (i.e. [1,2,3]) has depth of 1.
+        A singly-nested list (i.e. [[1,2],[3],[4,5,6]]) has depth of 2
         etc.
     If nesting is bad: raises ValueError
         Bad nesting means that all elements are not the same depth. For example,
@@ -98,14 +98,14 @@ def r_explore_nesting(nested_list, depth=0):
         raise RecursionError("Depth is too big; recursion is going nuts")
     if hasattr(nested_list, '__len__'):
         if len(nested_list) == 0:
-            return depth
+            return None
         depths = [r_explore_nesting(item, depth=depth+1) for item in nested_list]
-        if len(set(depths)) != 1:
+        if len(set((item for item in depths if item))) > 1:
             raise ValueError("Nesting is bad")
         else:
             return depths[0]
     else:
-        return depth-1
+        return depth
 
 def unpack_nested_list(nested_list):
     """
