@@ -92,7 +92,7 @@ def r_explore_nesting(nested_list, depth=0):
         but the second element is a singly-nested list.
         [[1,2],3,[4,5,6]] is bad nesting
     This function uses recursion; in order to prevent runaway recursion, the function
-    raises a ValueError if the depth of recursion is more than 10.
+    raises a RecursionError if the depth of recursion is more than 10.
     """
     if depth > 10:
         raise RecursionError("Depth is too big; recursion is going nuts")
