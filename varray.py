@@ -62,7 +62,7 @@ __all__ = ['varray','empty','empty_like','ones','ones_like','zeros','zeros_like'
     'save','load','row_concat','inner_concat','inner_stack']
 
 
-version = __version__ = '1.0.2'
+version = __version__ = '1.0.3'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 _linewidth = np.get_printoptions()['linewidth']
@@ -83,8 +83,8 @@ def r_explore_nesting(nested_list, depth=0):
     If nesting is good: returns depth.  
     If nesting is bad: raises ValueError
     
-        A non-nested list (i.e. [1,2,3]) has depth of 0.
-        A singly-nested list (i.e. [[1,2],[3],[4,5,6]]) has depth of 1
+        A non-nested list (i.e. [1,2,3]) has depth of 1.
+        A singly-nested list (i.e. [[1,2],[3],[4,5,6]]) has depth of 2
         etc.
     If nesting is bad: raises ValueError
         Bad nesting means that all elements are not the same depth. For example,
@@ -92,20 +92,20 @@ def r_explore_nesting(nested_list, depth=0):
         but the second element is a singly-nested list.
         [[1,2],3,[4,5,6]] is bad nesting
     This function uses recursion; in order to prevent runaway recursion, the function
-    raises a ValueError if the depth of recursion is more than 10.
+    raises a RecursionError if the depth of recursion is more than 10.
     """
     if depth > 10:
         raise RecursionError("Depth is too big; recursion is going nuts")
     if hasattr(nested_list, '__len__'):
         if len(nested_list) == 0:
-            return depth
+            return None
         depths = [r_explore_nesting(item, depth=depth+1) for item in nested_list]
-        if len(set(depths)) != 1:
+        if len(set((item for item in depths if item))) > 1:
             raise ValueError("Nesting is bad")
         else:
             return depths[0]
     else:
-        return depth-1
+        return depth
 
 def unpack_nested_list(nested_list):
     """
@@ -115,7 +115,7 @@ def unpack_nested_list(nested_list):
     darray_ndim = darray.ndim
     re_pose = [(item+1)%darray_ndim for item in range(darray_ndim)]
     darray = darray.transpose(*re_pose)
-    sarray = np.array([len(item) for item in nested_list])
+    sarray = np.array([len(item) for item in nested_list], dtype=np.int16)
     return darray, sarray
 
 def unpack_masked_array(ma_obj):
@@ -133,6 +133,8 @@ def unpack_masked_array(ma_obj):
     d_array = ma_manipulated.data[...,ma_notmask[final_slice]]
     s_array_item = (slice(None,None,None),)+(0,)*(ndim-2)+(slice(None,None,None),)
     s_array = (~ma_obj.mask[(slice(None,None,None),)+(0,)*(ndim-2)+(slice(None,None,None),)]).sum(axis=-1)
+    if not np.issubdtype(s_array.dtype, np.dtype('int16')):
+        s_array = s_array.astype(np.int16)
     return d_array, s_array
 
 def expand_slices(item, varray_dims):
