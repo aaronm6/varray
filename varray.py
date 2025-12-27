@@ -62,7 +62,7 @@ __all__ = ['varray','empty','empty_like','ones','ones_like','zeros','zeros_like'
     'save','load','row_concat','inner_concat','inner_stack']
 
 
-version = __version__ = '1.0.3'
+version = __version__ = '1.0.4'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 _linewidth = np.get_printoptions()['linewidth']
