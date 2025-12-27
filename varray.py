@@ -651,11 +651,19 @@ class varray(_varray_base, np.lib.mixins.NDArrayOperatorsMixin):
         else:
             raise TypeError(f"Function {op_name} not recognized")
     def _row_op_reduce(self, op_name, **kwargs):
+        axis = kwargs.pop('axis', None)
+        if (axis is not None) and (axis > 0) and (axis < (self.ndim-1)):
+            new_darray = getattr(self.flatten(), op_name)(axis=axis-1,**kwargs)
+            return self.__class__(darray=new_darray, sarray=self.sarray)
         self_ma = self.to_ma()
-        return np.asarray(getattr(self_ma, op_name)(**kwargs).data)
+        return getattr(self_ma, op_name)(axis=axis,**kwargs)
     def _row_op_accumulate(self, op_name, **kwargs):
+        axis = kwargs.pop('axis', None)
+        if (axis is None) and (axis > 0) and (axis < (self.ndim-1)):
+            new_darray = getattr(self.flatten(), op_name)(axis=axis-1,**kwargs)
+            return self.__class__(darray=new_darray, sarray=self.sarray)
         self_ma = self.to_ma()
-        return self.__class__(getattr(self_ma,op_name)(**kwargs))
+        return self.__class__(getattr(self_ma,op_name)(axis=axis,**kwargs))
     def __array__(self, dtype=None, copy=None):
         if copy is False:
             raise ValueError("copy=False is not allowed")
