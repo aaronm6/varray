@@ -62,7 +62,7 @@ __all__ = ['varray','empty','empty_like','ones','ones_like','zeros','zeros_like'
     'save','load','row_concat','inner_concat','inner_stack']
 
 
-version = __version__ = '1.0.4'
+version = __version__ = '1.0.5'
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])
 
 _linewidth = np.get_printoptions()['linewidth']
@@ -482,17 +482,19 @@ class _varray_base:
         """
         Returns an array of the same shape that indicates the column of each entry
         """
-        tag_array = -np.ones_like(self.flatten(), dtype=np.int32)
-        cs_index = np.r_[:len(self._csarray)]
-        tag_array[...,cs_index] = cs_index
-        return _urowindex.accumulate(tag_array, axis=-1).astype(np.int32)
+        print("ahoy, new get_row_index")
+        tag_array = np.zeros_like(self.flatten(), dtype=np.uint32)
+        tag_array[...,self._csarray[1:]] = 1
+        tag_array = tag_array.cumsum(axis=-1).astype(np.uint32)
+        return self.__class__(darray=tag_array, sarray=self.sarray)
     def get_col_index(self):
         """
         Returns an array of the same shape that indicates the column of each entry
         """
         tag_array = -np.ones_like(self.flatten(), dtype=np.int32)
         tag_array[..., self._csarray] = 0
-        return _ucolindex.accumulate(tag_array, axis=-1).astype(np.int32)
+        tag_array = _ucolindex.accumulate(tag_array, axis=-1).astype(np.int32)
+        return self.__class__(darray=tag_array, sarray=self.sarray)
 
 class varray(_varray_base, np.lib.mixins.NDArrayOperatorsMixin):
     """
