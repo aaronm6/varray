@@ -37,19 +37,19 @@ Class:
     varray : variable-array class. See its docstring for instantiation syntax
 
 Functions:
-    empty            : varray creation routine
-    empty_like       : varray creation routine
-    ones             : varray creation routine
-    ones_like        : varray creation routine
-    zeros            : varray creation routine
-    zeros_like       : varray creation routine
-    expand_to_columns: varray creation routine
-    reduce_and_fill  : varray creation routine
-    save             : save varrays, numpy arrays, numpy masked arrays to *.vrz file
-    load             : load items from file that was created by varray.save
-    row_concat       : concatenate multiple varrays along the 0th axis
-    inner_concat     : concatenate multiple varrays along an inner axis (not 0th, not last)
-    inner_stack      : stack multiple arrays along an inner axis (not 0th, not last)
+    empty             : varray creation routine
+    empty_like        : varray creation routine
+    ones              : varray creation routine
+    ones_like         : varray creation routine
+    zeros             : varray creation routine
+    zeros_like        : varray creation routine
+    expand_to_columns : varray creation routine
+    reduce_and_fill   : varray creation routine
+    save              : save varrays, numpy arrays, numpy masked arrays to *.vrz file
+    load              : load items from file that was created by varray.save
+    row_concat        : concatenate multiple varrays along the 0th axis
+    inner_concat      : concatenate multiple varrays along an inner axis (not 0th, not last)
+    inner_stack       : stack multiple arrays along an inner axis (not 0th, not last)
 
 Misc:
     version
