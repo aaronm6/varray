@@ -26,4 +26,4 @@ platforms=["unix-like"]
 zip-safe = false
 
 [tool.setuptools.dynamic]
-version = {attr = "varray.__version__"}
+version = {attr = "varray._version.__version__"}

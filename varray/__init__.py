@@ -58,8 +58,9 @@ Misc:
 from .varray_class import *
 from .varray_creation import *
 from .varray_manipulation import *
+from ._version import __version__
 
 del varray_class, varray_creation, varray_manipulation
 
-__version__ = version
+version = __version__
 version_tuple = __version_tuple__ = tuple([int(item) for item in __version__.split('.')])

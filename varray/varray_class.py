@@ -6,9 +6,7 @@ import re
 from numbers import Number
 from ._utils import *
 
-__all__ = ['varray', 'save', 'load', 'version']
-
-version = '1.1.0'
+__all__ = ['varray', 'save', 'load']
 
 _linewidth = np.get_printoptions()['linewidth']
 _udecline = np.frompyfunc(lambda x, y: x-1 if x>0 else 0, 2, 1)
