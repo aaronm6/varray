@@ -36,11 +36,13 @@ def check_shape_consistency(va1, va2):
     va2_shape = va2.shape
     if len(va1_shape) != len(va2_shape):
         return False
-    reg_dims_same = all([x==y for x, y in zip(va1_shape, va2_shape)])
+    if not all([x==y for x, y in zip(va1_shape, va2_shape)]):
+        return False
     if len(va1.sarray) != len(va2.sarray):
         return False
-    var_dims_same = np.all(va1.sarray == va2.sarray)
-    return reg_dims_same and var_dims_same
+    if not np.all(va1.sarray == va2.sarray):
+        return False
+    return True
 
 def check_bool_shape_validity(va_data, va_bool):
     """
@@ -72,6 +74,11 @@ def check_bool_shape_validity(va_data, va_bool):
     if len(sarray_data) != len(sarray_bool):
         return False
     if np.all(sarray_data == sarray_bool):
+        darray_data_shape = va_data._darray.shape
+        darray_bool_shape = va_bool._darray.shape
+        inner_dim_same = all([a==b for a, b in zip(darray_data_shape[:-1],darray_bool_shape[:-1])])
+        if (len(darray_bool_shape)>1) and not inner_dim_same:
+            return False
         return True
     return False
 
@@ -104,7 +111,6 @@ class _varray_base:
             self._csarray = self._csarray.astype(np.uint32)
         self.max_lines = 20
         self.base = None
-        self._repr_flag = False
         fill_value = None
         if np.issubdtype(self.dtype, np.floating):
             fill_value = np.nan
@@ -193,10 +199,6 @@ class _varray_base:
         if np.issubdtype(type(first_idx), np.integer):
             column_slice = self._get_col_slice(first_idx, last_idx)
             full_item = self._darray[middle_idx + (column_slice,)]
-            if (full_item.size == 1) and (not self._repr_flag):
-                full_item, = full_item
-            if self._repr_flag:
-                self._repr_flag = False
             return full_item
         i_start, i_stop, i_step = None, None, None
         if np.issubdtype(type(last_idx), np.integer):
@@ -224,9 +226,45 @@ class _varray_base:
             outvar.base = self
         else:
             outvar.base = self.base
-        return outvar        
+        return outvar
+    def _set_bool(self, item, val):
+        """
+        Farming out __setitem__ to here when input 'item' is a varray of dtype=bool
+        The only allowed scenario when 'item' is a varray is if it is of dtype=bool
+        """
+        # check that item is a bool
+        if not np.issubdtype(item.dtype, np.bool_):
+            raise TypeError("If varray is given as an item, it must be of dtype bool.")
+        # check that item is the right shape
+        if not check_bool_shape_validity(self, item):
+            err_msg = "Given boolean varray is not the right shape.  Must have\n"
+            err_msg += "the same sarray as the varray being sliced, and must have\n"
+            err_msg += "either no inner dimensions, or the same inner dimensions\n"
+            err_msg += "as the varray being sliced."
+            raise ValueError(err_msg)
+        # Four cases:
+        # item is 2d-bool, val is varray
+        # item is 2d-bool, val is number
+        # item is nd-bool, val is varray
+        # item is nd-bool, val is number
+        if item.ndim == 2:
+            if isinstance(val, Number):
+                for self_row, cut in zip(self, item):
+                    self_row[..., cut] = val
+            else:
+                for self_row, cut, set_row in zip(self, item, val):
+                    self_row[..., cut] = set_row
+        else:
+            if isinstance(val, Number):
+                for self_row, cut in zip(self, item):
+                    self_row[cut] = val
+            else:   
+                for self_row, cut, set_row in zip(self, item, val):
+                    self_row[cut] = set_row
     def __setitem__(self, item, val):
-        varray_dims = self._darray.ndim + 1
+        if isinstance(item, self.__class__):
+            self._set_bool(item, val)
+            return
         item = expand_slices(item, varray_dims)
         if np.issubdtype(type(item[0]), np.integer):
             first_idx, middle_idx, last_idx = item[0], item[1:-1], item[-1]
@@ -237,7 +275,7 @@ class _varray_base:
                 raise TypeError(f"Setting data in this way must be done with another {self.cls_name} or a number")
             if isinstance(val, self.__class__) and not check_shape_consistency(self[item], val):
                 raise ValueError(f"Setting data can only be done with a {self.cls_name} of the same shape")
-            if item[-1] != slice(None, None, None):
+            if (len(item)>1) and (item[-1] != slice(None, None, None)):
                 raise IndexError("Setting data in this way can only be done on the full row")
             tag_array = np.zeros(self._darray.shape[-1], dtype=int)
             tag_array[self._csarray[item[0]]] = self._sarray[item[0]]
@@ -253,7 +291,6 @@ class _varray_base:
         pad_space = len(outstr)
         with repr_precision_context(precision=self.float_precision):
             for k in range(numlines):
-                self._repr_flag = True
                 entry_str = '\n'.join([' '*pad_space + item for item in str(self[k]).split('\n')])
                 if k==0:
                     entry_str = entry_str[pad_space:]

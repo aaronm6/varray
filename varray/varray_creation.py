@@ -1,6 +1,7 @@
 # BSD 3-Clause License; see https://github.com/aaronm6/varray/blob/main/LICENSE
 
 import numpy as np
+from numbers import Number
 from .varray_class import *
 from .varray_class import _rowops_reduce
 
@@ -161,9 +162,9 @@ def empty_like(v_obj, dtype=None):
     """
     if not isinstance(v_obj, varray):
         raise TypeError("Provided object must be a varray")
-    if not (isinstance(dt, type) or (dt is None)):
+    if not (isinstance(dtype, type) or (dtype is None)):
         raise TypeError("Specified dtype must be a type instance")
-    darray = np.empty_like(v_obj.flatten(), dtype=dt)
+    darray = np.empty_like(v_obj.flatten(), dtype=dtype)
     return varray(darray=darray, sarray=v_obj.sarray)
 
 def ones_like(v_obj, dtype=None):
@@ -184,9 +185,9 @@ def ones_like(v_obj, dtype=None):
     """
     if not isinstance(v_obj, varray):
         raise TypeError("Provided object must be a varray")
-    if not (isinstance(dt, type) or (dt is None)):
+    if not (isinstance(dtype, type) or (dtype is None)):
         raise TypeError("Specified dtype must be a type instance")
-    darray = np.ones_like(v_obj.flatten(), dtype=dt)
+    darray = np.ones_like(v_obj.flatten(), dtype=dtype)
     return varray(darray=darray, sarray=v_obj.sarray)
 
 def zeros_like(v_obj, dtype=None):
@@ -207,9 +208,9 @@ def zeros_like(v_obj, dtype=None):
     """
     if not isinstance(v_obj, varray):
         raise TypeError("Provided object must be a varray")
-    if not (isinstance(dt, type) or (dt is None)):
+    if not (isinstance(dtype, type) or (dtype is None)):
         raise TypeError("Specified dtype must be a type instance")
-    darray = np.zeros_like(v_obj.flatten(), dtype=dt)
+    darray = np.zeros_like(v_obj.flatten(), dtype=dtype)
     return varray(darray=darray, sarray=v_obj.sarray)
 
 def full_like(v_obj, fill_value, dtype=None):
@@ -233,9 +234,9 @@ def full_like(v_obj, fill_value, dtype=None):
         raise TypeError("Provided object must be a varray")
     if not isinstance(fill_value, Number):
         raise TypeError("fill_value must be a valid number")
-    if not (isinstance(dt, type) or (dt is None)):
+    if not (isinstance(dtype, type) or (dtype is None)):
         raise TypeError("Specified dtype must be a type instance")
-    darray = np.full_like(v_obj.flatten(), fill_value, dtype=dt)
+    darray = np.full_like(v_obj.flatten(), fill_value, dtype=dtype)
     return varray(darray=darray, sarray=v_obj.sarray)
 
 def expand_to_columns(init_array, sarray=None, dtype=None):
