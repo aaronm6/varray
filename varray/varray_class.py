@@ -712,7 +712,8 @@ def save(file_name, **kwargs):
         elif isinstance(kwargs[key], np.ndarray):
             save_dict.update({key: kwargs[key]})
         else:
-            raise TypeError("Only varrays and numpy arrays (masked and normal) can be saved")
+            scname = f'sc__{key}'
+            save_dict.update({scname:np.array(kwargs[key])})
     if not file_name.endswith('.vrz'):
         file_name += '.vrz'
     with open(file_name, 'wb') as ff:
@@ -722,6 +723,7 @@ def _unpack_vrz_file(d_file):
     d = dict(d_file)
     va_names = [re.findall(r'va__(.*)_d',item)[0] for item in d if re.match(r'va__.*_d',item)]
     ma_names = [re.findall(r'ma__(.*)_d',item)[0] for item in d if re.match(r'ma__.*_d',item)]
+    sc_names = [re.findall(r'sc__(.*)',item)[0] for item in d if re.match(r'sc__.*',item)]
     array_dict = {}
     for va_name in va_names:
         temp_va = varray(darray=d.pop(f'va__{va_name}_d'), sarray=d.pop(f'va__{va_name}_s'))
@@ -729,6 +731,8 @@ def _unpack_vrz_file(d_file):
     for ma_name in ma_names:
         temp_ma = np.ma.masked_array(d.pop(f'ma__{ma_name}_d'), mask=d.pop(f'ma__{ma_name}_s'))
         array_dict[ma_name] = temp_ma
+    for sc_name in sc_names:
+        array_dict[sc_name] = (d.pop(f'sc__{sc_name}')).item()
     array_dict.update(d)
     return array_dict
 
