@@ -300,7 +300,8 @@ def expand_to_columns(init_array, sarray=None, dtype=None):
     
     tag_array = np.full(init_array.shape[:-1] + (num_cols,), max_val, dtype=dtype)
     csarray = np.r_[0, new_sarray[:-1].astype(np.uint32)].cumsum()
-    tag_array[..., csarray] = init_array
+    csarray = csarray[csarray<tag_array.shape[-1]]
+    tag_array[..., csarray] = init_array[...,:len(csarray)]
     new_darray = ufill_func.accumulate(tag_array, axis=-1).astype(dtype)
     
     return varray(darray=new_darray, sarray=new_sarray)
