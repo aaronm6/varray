@@ -725,8 +725,8 @@ def save(file_name, **kwargs):
 
 def _unpack_vrz_file(d_file):
     d = dict(d_file)
-    va_names = [re.findall(r'va__(.*)_d',item)[0] for item in d if re.match(r'va__.*_d',item)]
-    ma_names = [re.findall(r'ma__(.*)_d',item)[0] for item in d if re.match(r'ma__.*_d',item)]
+    va_names = [re.findall(r'va__(.*)_d',item)[0] for item in d if re.match(r'va__.*_d$',item)]
+    ma_names = [re.findall(r'ma__(.*)_d',item)[0] for item in d if re.match(r'ma__.*_d$',item)]
     sc_names = [re.findall(r'sc__(.*)',item)[0] for item in d if re.match(r'sc__.*',item)]
     array_dict = {}
     for va_name in va_names:
