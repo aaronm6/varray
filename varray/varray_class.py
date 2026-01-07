@@ -191,7 +191,7 @@ class _varray_base:
         if isinstance(item, self.__class__) and np.issubdtype(item.dtype, np.bool_):
             if not check_bool_shape_validity(self, item):
                 raise IndexError("A boolean varray in __getitem__ must have a valid shape")
-            new_sarray = item.to_ma().sum(axis=-1)
+            new_sarray = item.to_ma().sum(axis=-1).data
             new_darray = self.flatten()[...,item.flatten()]
             return self.__class__(darray=new_darray, sarray=new_sarray)
         item = expand_slices(item, varray_dims)
@@ -375,10 +375,12 @@ class _varray_base:
         See also:
             get_col_index
         """
-        tag_array = np.zeros_like(self.flatten(), dtype=np.uint32)
-        tag_array[...,self._csarray[1:]] = 1
+        tsarray = np.where(self.sarray>0, self.sarray, 1)
+        csarray = np.r_[0, tsarray[:-1]].cumsum()
+        tag_array = np.zeros(self._darray.shape[:-1]+(tsarray.sum(),), dtype=np.uint32)
+        tag_array[..., csarray[1:]] = 1
         tag_array = tag_array.cumsum(axis=-1).astype(np.uint32)
-        return self.__class__(darray=tag_array, sarray=self.sarray)
+        return self.__class__(darray=tag_array, sarray=self.sarray, csarray=csarray)
     def get_col_index(self):
         """
         Returns an array of the same shape that indicates the column of each entry.  For example if,
@@ -404,7 +406,9 @@ class _varray_base:
             get_row_index
         """
         tag_array = -np.ones_like(self.flatten(), dtype=np.int32)
-        tag_array[..., self._csarray] = 0
+        csarray = self._csarray
+        csarray = csarray[csarray < tag_array.shape[-1]]
+        tag_array[..., csarray] = 0
         tag_array = _ucolindex.accumulate(tag_array, axis=-1).astype(np.int32)
         return self.__class__(darray=tag_array, sarray=self.sarray)
 
